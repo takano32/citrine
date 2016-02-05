@@ -7,13 +7,6 @@ cd ..
 cd ..
 cp plugins/percolator/libctrpercolator.so mods/percolator/libctrpercolator.so
 
-#request test
-gcc -c request.c -Wall -Werror -fpic -o request.o ; gcc -shared -o libctrrequest.so request.o ccgi-1.2/ccgi.o
-cd ..
-cd ..
-cp plugins/request/libctrrequest.so mods/request/libctrrequest.so
-
-
 make clean;
 ./mk.bash
 
