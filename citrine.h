@@ -73,6 +73,7 @@
  * objects.
  */
 #define CTR_CATEGORY_PRIVATE_PROPERTY 0
+#define CTR_CATEGORY_PUBLIC_PROPERTY 0 /* same, all properties are PRIVATE, except those in CtrStdWorld, this is just to avoid confusion */
 #define CTR_CATEGORY_PUBLIC_METHOD 1
 
 /**
@@ -328,7 +329,7 @@ ctr_object* ctr_internal_cast2bool( ctr_object* o );
 ctr_object* ctr_internal_cast2number(ctr_object* o);
 ctr_object* ctr_internal_create_object(int type);
 ctr_object* ctr_internal_cast2string( ctr_object* o );
-void        ctr_internal_plugin_find( ctr_object* key );
+void*       ctr_internal_plugin_find( ctr_object* key );
 ctr_object* ctr_find(ctr_object* key);
 ctr_object* ctr_find_in_my(ctr_object* key);
 ctr_object* ctr_assign_value(ctr_object* key, ctr_object* val);
