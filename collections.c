@@ -434,8 +434,9 @@ ctr_object* ctr_map_put(ctr_object* myself, ctr_argument* argumentList) {
 	ctr_argument* emptyArgumentList = malloc(sizeof(ctr_argument));
 	emptyArgumentList->next = NULL;
 	emptyArgumentList->object = NULL;
+	char* toString = "toString";
 
-	putKey = ctr_send_message(nextArgument->object, "toString", 8, emptyArgumentList);
+	putKey = ctr_send_message(nextArgument->object, toString, strlen(toString), emptyArgumentList);
 
 	/* If developer returns something other than string (ouch, toString), then cast anyway */
 	if (putKey->info.type != CTR_OBJECT_TYPE_OTSTRING) {
@@ -460,6 +461,7 @@ ctr_object* ctr_map_get(ctr_object* myself, ctr_argument* argumentList) {
 	ctr_argument* emptyArgumentList;
 	ctr_object*   searchKey;
 	ctr_object*   foundObject;
+	char* toString = "toString";
 
 	emptyArgumentList = malloc(sizeof(ctr_argument));
 	emptyArgumentList->next = NULL;
@@ -468,7 +470,7 @@ ctr_object* ctr_map_get(ctr_object* myself, ctr_argument* argumentList) {
 	searchKey = argumentList->object;
 
 	/* Give developer a chance to define a key for array */
-	searchKey = ctr_send_message(searchKey, "toString", 8, emptyArgumentList);
+	searchKey = ctr_send_message(searchKey, toString, strlen(toString), emptyArgumentList);
 
 	/* If developer returns something other than string (ouch, toString), then cast anyway */
 	if (searchKey->info.type != CTR_OBJECT_TYPE_OTSTRING) {
