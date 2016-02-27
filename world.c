@@ -315,18 +315,37 @@ ctr_object* ctr_internal_cast2number(ctr_object* o) {
 ctr_object* ctr_internal_cast2string( ctr_object* o ) {
 	int slen;
 	char* s;
-	if (o->info.type == CTR_OBJECT_TYPE_OTSTRING) return o;
-	else if (o->info.type == CTR_OBJECT_TYPE_OTNIL) { return ctr_build_string("[Nil]", 5); }
-	else if (o->info.type == CTR_OBJECT_TYPE_OTBOOL && o->value.bvalue == 1) { return ctr_build_string("[True]", 6); }
-	else if (o->info.type == CTR_OBJECT_TYPE_OTBOOL && o->value.bvalue == 0) { return ctr_build_string("[False]", 7); }
-	else if (o->info.type == CTR_OBJECT_TYPE_OTNUMBER) {
-		s = calloc(80, sizeof(char));
-		CTR_CONVFP(s,o->value.nvalue);
-		slen = strlen(s);
-		return ctr_build_string(s, slen);
+	switch (o->info.type) {
+		case CTR_OBJECT_TYPE_OTSTRING:
+			return o;
+			break;
+		case CTR_OBJECT_TYPE_OTNIL:
+			return ctr_build_string("[Nil]", 5);
+			break;
+		case CTR_OBJECT_TYPE_OTBOOL:
+			if (o->value.bvalue == 1) {
+				return ctr_build_string("[True]", 6);
+			} else if (o->value.bvalue == 0) {
+				return ctr_build_string("[False]", 7);
+			} else {
+				return ctr_build_string("[?]", 3);
+			}
+			break;
+		case CTR_OBJECT_TYPE_OTNUMBER:
+			s = calloc(80, sizeof(char));
+			CTR_CONVFP(s,o->value.nvalue);
+			slen = strlen(s);
+			return ctr_build_string(s, slen);
+			break;
+		case CTR_OBJECT_TYPE_OTBLOCK:
+			return ctr_build_string("[Block]",7);
+			break;
+		case CTR_OBJECT_TYPE_OTOBJECT:
+			return ctr_build_string("[Object]",8);
+			break;
+		default:
+			break;
 	}
-	else if (o->info.type == CTR_OBJECT_TYPE_OTBLOCK) { return ctr_build_string("[Block]",7);}
-	else if (o->info.type == CTR_OBJECT_TYPE_OTOBJECT) { return ctr_build_string("[Object]",8);}
 	return ctr_build_string("[?]", 3);
 }
 
@@ -479,9 +498,9 @@ void ctr_initialize_world() {
 	ctr_internal_create_func(CtrStdBool, ctr_build_string("continue", 8), &ctr_bool_continue);
 	ctr_internal_create_func(CtrStdBool, ctr_build_string("else:", 5), &ctr_bool_ifFalse);
 	ctr_internal_create_func(CtrStdBool, ctr_build_string("not", 3), &ctr_bool_not);
-	ctr_internal_create_func(CtrStdBool, ctr_build_string("∧", 3), &ctr_bool_and);
+	ctr_internal_create_func(CtrStdBool, ctr_build_string("and:", 4), &ctr_bool_and);
 	ctr_internal_create_func(CtrStdBool, ctr_build_string("nor:", 4), &ctr_bool_nor);
-	ctr_internal_create_func(CtrStdBool, ctr_build_string("∨", 3), &ctr_bool_or);
+	ctr_internal_create_func(CtrStdBool, ctr_build_string("or:", 3), &ctr_bool_or);
 	ctr_internal_create_func(CtrStdBool, ctr_build_string("xor:", 4), &ctr_bool_xor);
 	ctr_internal_create_func(CtrStdBool, ctr_build_string("=",1),&ctr_bool_eq);
 	ctr_internal_create_func(CtrStdBool, ctr_build_string("≠",3),&ctr_bool_neq);
@@ -496,14 +515,14 @@ void ctr_initialize_world() {
 	CtrStdNumber = ctr_internal_create_object(CTR_OBJECT_TYPE_OTNUMBER);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("to:by:do:", 9), &ctr_number_to_by_do);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("+", 1), &ctr_number_add);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("inc:",4), &ctr_number_inc);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("add:",4), &ctr_number_inc);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("-",1), &ctr_number_minus);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("dec:",4), &ctr_number_dec);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("subtract:",9), &ctr_number_dec);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("*",1),&ctr_number_multiply);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("times:",6),&ctr_number_times);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("mul:",4),&ctr_number_mul);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("multiplyBy:",11),&ctr_number_mul);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("/",1), &ctr_number_divide);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("div:",4),&ctr_number_div);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("divideBy:",9),&ctr_number_div);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string(">",1),&ctr_number_higherThan);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("≥",3),&ctr_number_higherEqThan);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("<",1),&ctr_number_lowerThan);
@@ -513,21 +532,23 @@ void ctr_initialize_world() {
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("%",1),&ctr_number_modulo);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("factorial",9),&ctr_number_factorial);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("floor",5),&ctr_number_floor);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("ceil",4),&ctr_number_ceil);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("ceiling",7),&ctr_number_ceil);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("round",5),&ctr_number_round);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("abs",3),&ctr_number_abs);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("sin",3),&ctr_number_sin);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("cos",3),&ctr_number_cos);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("exp",3),&ctr_number_exp);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("sqrt",4),&ctr_number_sqrt);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("tan",3),&ctr_number_tan);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("atan",4),&ctr_number_atan);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("log",3),&ctr_number_log);
-	ctr_internal_create_func(CtrStdNumber, ctr_build_string("pow:",4),&ctr_number_pow);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("absolute",8),&ctr_number_abs);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("sine",4),&ctr_number_sin);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("cosine",6),&ctr_number_cos);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("exponent",8),&ctr_number_exp);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("squareRoot",10),&ctr_number_sqrt);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("tangent",7),&ctr_number_tan);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("arctangent",10),&ctr_number_atan);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("logarithm",9),&ctr_number_log);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("toPowerOf:",10),&ctr_number_pow);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("min:",4),&ctr_number_min);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("max:",4),&ctr_number_max);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("odd",3),&ctr_number_odd);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("even",4),&ctr_number_even);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("positive",8),&ctr_number_positive);
+	ctr_internal_create_func(CtrStdNumber, ctr_build_string("negative",8),&ctr_number_negative);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("toString", 8), &ctr_number_to_string);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("toBoolean", 9), &ctr_number_to_boolean);
 	ctr_internal_create_func(CtrStdNumber, ctr_build_string("between:and:",12),&ctr_number_between);
@@ -544,8 +565,8 @@ void ctr_initialize_world() {
 	ctr_internal_create_func(CtrStdString, ctr_build_string("=", 1), &ctr_string_eq);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("≠", 3), &ctr_string_neq);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("trim", 4), &ctr_string_trim);
-	ctr_internal_create_func(CtrStdString, ctr_build_string("ltrim", 5), &ctr_string_ltrim);
-	ctr_internal_create_func(CtrStdString, ctr_build_string("rtrim", 5), &ctr_string_rtrim);
+	ctr_internal_create_func(CtrStdString, ctr_build_string("leftTrim", 8), &ctr_string_ltrim);
+	ctr_internal_create_func(CtrStdString, ctr_build_string("rightTrim", 9), &ctr_string_rtrim);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("htmlEscape", 10), &ctr_string_html_escape);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("at:", 3), &ctr_string_at);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("byteAt:", 7), &ctr_string_byte_at);
@@ -553,10 +574,12 @@ void ctr_initialize_world() {
 	ctr_internal_create_func(CtrStdString, ctr_build_string("lastIndexOf:", 12), &ctr_string_last_index_of);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("replace:with:", 13), &ctr_string_replace_with);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("split:", 6), &ctr_string_split);
-	ctr_internal_create_func(CtrStdString, ctr_build_string("up", 2), &ctr_string_to_upper);
-	ctr_internal_create_func(CtrStdString, ctr_build_string("low", 3), &ctr_string_to_lower);
+	ctr_internal_create_func(CtrStdString, ctr_build_string("asciiUpperCase", 14), &ctr_string_to_upper);
+	ctr_internal_create_func(CtrStdString, ctr_build_string("asciiLowerCase", 14), &ctr_string_to_lower);
+	ctr_internal_create_func(CtrStdString, ctr_build_string("asciiUpperCase1st", 17), &ctr_string_to_upper1st);
+	ctr_internal_create_func(CtrStdString, ctr_build_string("asciiLowerCase1st", 17), &ctr_string_to_lower1st);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("skip:", 5), &ctr_string_skip);
-	
+	ctr_internal_create_func(CtrStdString, ctr_build_string("append:", 7), &ctr_string_append);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("toNumber", 8), &ctr_string_to_number);
 	ctr_internal_create_func(CtrStdString, ctr_build_string("toBoolean", 9), &ctr_string_to_boolean);
 	ctr_internal_object_add_property(CtrStdWorld, ctr_build_string("String", 6), CtrStdString, 0);
@@ -565,7 +588,6 @@ void ctr_initialize_world() {
 	/* Block */
 	CtrStdBlock = ctr_internal_create_object(CTR_OBJECT_TYPE_OTBLOCK);
 	ctr_internal_create_func(CtrStdBlock, ctr_build_string("run", 3), &ctr_block_runIt);
-	ctr_internal_create_func(CtrStdBlock, ctr_build_string("*", 1), &ctr_block_times);
 	ctr_internal_create_func(CtrStdBlock, ctr_build_string("applyTo:", 8), &ctr_block_runIt);
 	ctr_internal_create_func(CtrStdBlock, ctr_build_string("applyTo:and:", 12), &ctr_block_runIt);
 	ctr_internal_create_func(CtrStdBlock, ctr_build_string("applyTo:and:and:", 16), &ctr_block_runIt);
@@ -622,6 +644,7 @@ void ctr_initialize_world() {
 	
 	/* File */
 	CtrStdFile = ctr_internal_create_object(CTR_OBJECT_TYPE_OTOBJECT);
+	CtrStdFile->value.rvalue = NULL;
 	ctr_internal_create_func(CtrStdFile, ctr_build_string("new:", 4), &ctr_file_new);
 	ctr_internal_create_func(CtrStdFile, ctr_build_string("path", 4), &ctr_file_path);
 	ctr_internal_create_func(CtrStdFile, ctr_build_string("read", 4), &ctr_file_read);
@@ -632,6 +655,13 @@ void ctr_initialize_world() {
 	ctr_internal_create_func(CtrStdFile, ctr_build_string("delete", 6), &ctr_file_delete);
 	ctr_internal_create_func(CtrStdFile, ctr_build_string("include", 7), &ctr_file_include);
 	ctr_internal_create_func(CtrStdFile, ctr_build_string("go", 2), &ctr_file_include_ast);
+	ctr_internal_create_func(CtrStdFile, ctr_build_string("open:", 5), &ctr_file_open);
+	ctr_internal_create_func(CtrStdFile, ctr_build_string("close", 5), &ctr_file_close);
+	ctr_internal_create_func(CtrStdFile, ctr_build_string("readBytes:", 10), &ctr_file_read_bytes);
+	ctr_internal_create_func(CtrStdFile, ctr_build_string("writeBytes:", 11), &ctr_file_write_bytes);
+	ctr_internal_create_func(CtrStdFile, ctr_build_string("seek:", 5), &ctr_file_seek);
+	ctr_internal_create_func(CtrStdFile, ctr_build_string("rewind", 6), &ctr_file_seek_rewind);
+	ctr_internal_create_func(CtrStdFile, ctr_build_string("end", 3), &ctr_file_seek_end);
 	ctr_internal_object_add_property(CtrStdWorld, ctr_build_string("File", 4), CtrStdFile, 0);
 	CtrStdFile->link = CtrStdObject;
 
@@ -641,7 +671,7 @@ void ctr_initialize_world() {
 	ctr_internal_create_func(CtrStdCommand, ctr_build_string("argCount", 8), &ctr_command_num_of_args);
 	ctr_internal_create_func(CtrStdCommand, ctr_build_string("env:", 4), &ctr_command_get_env);
 	ctr_internal_create_func(CtrStdCommand, ctr_build_string("env:val:", 8), &ctr_command_set_env);
-	ctr_internal_create_func(CtrStdCommand, ctr_build_string("??", 2), &ctr_command_question);
+	ctr_internal_create_func(CtrStdCommand, ctr_build_string("askQuestion", 11), &ctr_command_question);
 	ctr_internal_create_func(CtrStdCommand, ctr_build_string("exit", 4), &ctr_command_exit);
 	ctr_internal_object_add_property(CtrStdWorld, ctr_build_string("Command", 7), CtrStdCommand, 0);
 	CtrStdCommand->link = CtrStdObject;
@@ -657,11 +687,14 @@ void ctr_initialize_world() {
 	CtrStdDice = ctr_internal_create_object(CTR_OBJECT_TYPE_OTOBJECT);
 	ctr_internal_create_func(CtrStdDice, ctr_build_string("roll", 4), &ctr_dice_throw);
 	ctr_internal_create_func(CtrStdDice, ctr_build_string("rollWithSides:", 14), &ctr_dice_sides);
+	ctr_internal_create_func(CtrStdDice, ctr_build_string("rawRandomNumber", 15), &ctr_dice_rand);
 	ctr_internal_object_add_property(CtrStdWorld, ctr_build_string("Dice", 4), CtrStdDice, 0);
 	CtrStdDice->link = CtrStdObject;
 
 	/* Shell */
 	CtrStdShell = ctr_internal_create_object(CTR_OBJECT_TYPE_OTOBJECT);
+	ctr_internal_create_func(CtrStdShell, ctr_build_string("respondTo:", 10), &ctr_shell_respond_to);
+	ctr_internal_create_func(CtrStdShell, ctr_build_string("respondTo:with:", 15), &ctr_shell_respond_to_with);
 	ctr_internal_create_func(CtrStdShell, ctr_build_string("call:", 5), &ctr_shell_call);
 	ctr_internal_object_add_property(CtrStdWorld, ctr_build_string("Shell", 5), CtrStdShell, 0);
 	CtrStdShell->link = CtrStdObject;
@@ -747,7 +780,7 @@ ctr_object* ctr_send_message(ctr_object* receiverObject, char* message, long vle
  * Assigns a value to a variable in the current context.
  */
 ctr_object* ctr_assign_value(ctr_object* key, ctr_object* o) {
-	ctr_object* object;
+	ctr_object* object = NULL;
 	if (CtrStdError) return CtrStdNil;
 	key->info.sticky = 0;
 	if (o->info.type == CTR_OBJECT_TYPE_OTOBJECT || o->info.type == CTR_OBJECT_TYPE_OTMISC || o->info.type == CTR_OBJECT_TYPE_OTARRAY || o->info.type == CTR_OBJECT_TYPE_OTNIL) {
@@ -760,19 +793,27 @@ ctr_object* ctr_assign_value(ctr_object* key, ctr_object* o) {
 		object->info.sticky = 0;
 		ctr_set(key, object);
 	}
-    /* depending on type, copy specific value */
-    if (o->info.type == CTR_OBJECT_TYPE_OTBOOL) {
-		object->value.bvalue = o->value.bvalue;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTNUMBER) {
-		object->value.nvalue = o->value.nvalue;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTSTRING) {
-		object->value.svalue = malloc(sizeof(ctr_string));
-		object->value.svalue->value = malloc(sizeof(char)*o->value.svalue->vlen);
-		memcpy(object->value.svalue->value, o->value.svalue->value,o->value.svalue->vlen);
-		object->value.svalue->vlen = o->value.svalue->vlen;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTBLOCK) {
-		object->value.block = o->value.block;
-	 }
+
+	/* depending on type, copy specific value */
+	switch (o->info.type) {
+		case CTR_OBJECT_TYPE_OTBOOL:
+			object->value.bvalue = o->value.bvalue;
+			break;
+		case CTR_OBJECT_TYPE_OTNUMBER:
+			object->value.nvalue = o->value.nvalue;
+			break;
+		case CTR_OBJECT_TYPE_OTSTRING:
+			object->value.svalue = malloc(sizeof(ctr_string));
+			object->value.svalue->value = malloc(sizeof(char)*o->value.svalue->vlen);
+			memcpy(object->value.svalue->value, o->value.svalue->value,o->value.svalue->vlen);
+			object->value.svalue->vlen = o->value.svalue->vlen;
+			break;
+		case CTR_OBJECT_TYPE_OTBLOCK:
+			object->value.block = o->value.block;
+			break;
+		default:
+			break;
+	}
 	return object;
 }
 
@@ -783,7 +824,7 @@ ctr_object* ctr_assign_value(ctr_object* key, ctr_object* o) {
  * Assigns a value to a property of an object. 
  */
 ctr_object* ctr_assign_value_to_my(ctr_object* key, ctr_object* o) {
-	ctr_object* object;
+	ctr_object* object = NULL;
 	ctr_object* my = ctr_find(ctr_build_string("me", 2));
 	if (CtrStdError) return CtrStdNil;
 	key->info.sticky = 0;
@@ -797,19 +838,28 @@ ctr_object* ctr_assign_value_to_my(ctr_object* key, ctr_object* o) {
 		object->info.sticky = 0;
 		ctr_internal_object_set_property(my, key, object, 0);
 	}
-     /* depending on type, copy specific value */
-    if (o->info.type == CTR_OBJECT_TYPE_OTBOOL) {
-		object->value.bvalue = o->value.bvalue;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTNUMBER) {
-		object->value.nvalue = o->value.nvalue;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTSTRING) {
-		object->value.svalue = malloc(sizeof(ctr_string));
-		object->value.svalue->value = malloc(sizeof(char)*o->value.svalue->vlen);
-		memcpy(object->value.svalue->value, o->value.svalue->value,o->value.svalue->vlen);
-		object->value.svalue->vlen = o->value.svalue->vlen;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTBLOCK) {
-		object->value.block = o->value.block;
-	 }
+
+	/* depending on type, copy specific value */
+	switch (o->info.type) {
+		case CTR_OBJECT_TYPE_OTBOOL:
+			object->value.bvalue = o->value.bvalue;
+			break;
+		case CTR_OBJECT_TYPE_OTNUMBER:
+			object->value.nvalue = o->value.nvalue;
+			break;
+		case CTR_OBJECT_TYPE_OTSTRING:
+			object->value.svalue = malloc(sizeof(ctr_string));
+			object->value.svalue->value = malloc(sizeof(char)*o->value.svalue->vlen);
+			memcpy(object->value.svalue->value, o->value.svalue->value,o->value.svalue->vlen);
+			object->value.svalue->vlen = o->value.svalue->vlen;
+			break;
+		case CTR_OBJECT_TYPE_OTBLOCK:
+			object->value.block = o->value.block;
+			break;
+		default:
+			break;
+
+	}
 	return object;
 }
 
@@ -819,7 +869,7 @@ ctr_object* ctr_assign_value_to_my(ctr_object* key, ctr_object* o) {
  * Assigns a value to a local of an object. 
  */
 ctr_object* ctr_assign_value_to_local(ctr_object* key, ctr_object* o) {
-	ctr_object* object;
+	ctr_object* object = NULL;
 	ctr_object* context;
 	if (CtrStdError) return CtrStdNil;
 	context = ctr_contexts[ctr_context_id];
@@ -834,18 +884,26 @@ ctr_object* ctr_assign_value_to_local(ctr_object* key, ctr_object* o) {
 		object->info.sticky = 0;
 		ctr_internal_object_set_property(context, key, object, 0);
 	}
-     /* depending on type, copy specific value */
-    if (o->info.type == CTR_OBJECT_TYPE_OTBOOL) {
-		object->value.bvalue = o->value.bvalue;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTNUMBER) {
-		object->value.nvalue = o->value.nvalue;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTSTRING) {
-		object->value.svalue = malloc(sizeof(ctr_string));
-		object->value.svalue->value = malloc(sizeof(char)*o->value.svalue->vlen);
-		memcpy(object->value.svalue->value, o->value.svalue->value,o->value.svalue->vlen);
-		object->value.svalue->vlen = o->value.svalue->vlen;
-	 } else if (o->info.type == CTR_OBJECT_TYPE_OTBLOCK) {
-		object->value.block = o->value.block;
-	 }
+
+	/* depending on type, copy specific value */
+	switch (o->info.type) {
+		case CTR_OBJECT_TYPE_OTBOOL:
+			object->value.bvalue = o->value.bvalue;
+			break;
+		case CTR_OBJECT_TYPE_OTNUMBER:
+			object->value.nvalue = o->value.nvalue;
+			break;
+		case CTR_OBJECT_TYPE_OTSTRING:
+			object->value.svalue = malloc(sizeof(ctr_string));
+			object->value.svalue->value = malloc(sizeof(char)*o->value.svalue->vlen);
+			memcpy(object->value.svalue->value, o->value.svalue->value,o->value.svalue->vlen);
+			object->value.svalue->vlen = o->value.svalue->vlen;
+			break;
+		case CTR_OBJECT_TYPE_OTBLOCK:
+			object->value.block = o->value.block;
+			break;
+		default:
+			break;
+	}
 	return object;
 }

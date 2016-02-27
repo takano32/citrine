@@ -129,16 +129,16 @@ typedef struct ctr_argument ctr_argument;
  * Root Object
  */
 struct ctr_object {
-    const char* name;
-    ctr_map* properties;
-    ctr_map* methods;
-    struct {
+	const char* name;
+	ctr_map* properties;
+	ctr_map* methods;
+	struct {
 		unsigned int type: 4;
 		unsigned int mark: 1;
 		unsigned int sticky: 1;
 	} info;
-    struct ctr_object* link;
-    union uvalue {
+	struct ctr_object* link;
+	union uvalue {
 		ctr_bool bvalue;
 		ctr_number nvalue;
 		ctr_string* svalue;
@@ -427,6 +427,8 @@ ctr_object* ctr_number_to_string(ctr_object* myself, ctr_argument* argumentList)
 ctr_object* ctr_number_to_boolean(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_number_between(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_number_to_by_do(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_number_positive(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_number_negative(ctr_object* myself, ctr_argument* argumentList);
 
 /**
  * String Interface
@@ -436,6 +438,7 @@ ctr_object* ctr_string_length(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_fromto(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_from_length(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_concat(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_string_append(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_eq(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_neq(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_trim(ctr_object* myself, ctr_argument* argumentList);
@@ -453,6 +456,8 @@ ctr_object* ctr_string_to_boolean(ctr_object* myself, ctr_argument* argumentList
 ctr_object* ctr_string_to_lower(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_to_upper(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_string_skip(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_string_to_lower1st(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_string_to_upper1st(ctr_object* myself, ctr_argument* argumentList);
 
 /**
  * Block Interface
@@ -465,7 +470,6 @@ ctr_object* ctr_block_while_true(ctr_object* myself, ctr_argument* argumentList)
 ctr_object* ctr_block_while_false(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_block_run(ctr_object* myself, ctr_argument* argList, ctr_object* my);
 ctr_object* ctr_block_times(ctr_object* myself, ctr_argument* argumentList);
-
 
 /**
  * Array Interface
@@ -485,8 +489,6 @@ ctr_object* ctr_array_from_to(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_array_add(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_array_map(ctr_object* myself, ctr_argument* argumentList);
 
-
-
 /**
  * HashMap Interface
  */
@@ -495,7 +497,6 @@ ctr_object* ctr_map_put(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_map_get(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_map_count(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_map_each(ctr_object* myself, ctr_argument* argumentList);
-
 
 /**
  * Console Interface
@@ -516,6 +517,14 @@ ctr_object* ctr_file_size(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_file_delete(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_file_include(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_file_include_ast(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_file_open(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_file_close(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_file_read_bytes(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_file_write_bytes(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_file_seek(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_file_seek_rewind(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_file_seek_end(ctr_object* myself, ctr_argument* argumentList);
+
 
 /**
  * Command Object Interface
@@ -537,6 +546,8 @@ ctr_object* ctr_clock_time(ctr_object* myself, ctr_argument* argumentList);
  * Shell Interface
  */
 ctr_object* ctr_shell_call(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_shell_respond_to(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_shell_respond_to_with(ctr_object* myself, ctr_argument* argumentList);
 
 /**
  * Garbage Collector Object Interface
@@ -557,6 +568,7 @@ int ctr_gc_object_counter;
  */
 ctr_object* ctr_dice_throw(ctr_object* myself, ctr_argument* argumentList);
 ctr_object* ctr_dice_sides(ctr_object* myself, ctr_argument* argumentList);
+ctr_object* ctr_dice_rand(ctr_object* myself, ctr_argument* argumentList);
 
 /**
  * Literal Constructors (internal only)
@@ -588,25 +600,6 @@ ctr_object* ctr_build_string_from_cstring( char* str );
 #define	CTR_PARSER_CREATE_PROGRAM_NODE() (ctr_tnode*) ctr_malloc(sizeof(ctr_tnode), 3)
 #define ASSIGN_STRING(o,p,v,s) o->p = ctr_malloc(s * sizeof(char), 0); memcpy( (char*) o->p,v,s);
 #define CTR_2CSTR(cs, s) cs = ctr_malloc((s->value.svalue->vlen+1) * sizeof(char),0); strncpy(cs, s->value.svalue->value, s->value.svalue->vlen); cs[s->value.svalue->vlen] = '\0';
-
-/**
- * Creates a mirror call.
- * A mirror call is a special macro for binary messages. For instance,
- * blocks accept a * message for looping, however numbers accept the same message for
- * multiplication with other numbers. When the user sends a * and a block to a number
- * we want to be nice and reverse the call (hence mirror) instead of just casting the block
- * to 0 and return 0 (pretty pointless).
- * 
- * @param T2     mirror type
- * @param CNAME  name of the function
- * @param TMPVAR name for temp. var
- */
-#define CTR_MIRROR_CALL(T2, CNAME, TMPVAR) if (argumentList->object->info.type == T2) {\
-	ctr_argument* TMPVAR = CTR_CREATE_ARGUMENT();\
-	TMPVAR->object = myself;\
-	return CNAME(argumentList->object, TMPVAR);\
-}\
-
 
 #define CTR_CONVFP(s,x){\
 char *buf = calloc(100, sizeof(char));\

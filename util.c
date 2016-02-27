@@ -133,24 +133,26 @@ void ctr_internal_debug_tree(ctr_tnode* ti, int indent) {
 		int i;
 		for (i=0; i<indent; i++) printf(" ");
 		str = calloc(40, sizeof(char));
-		if (t->type == CTR_AST_NODE_EXPRASSIGNMENT) 		str = "ASSIGN\0";
-		else if (t->type == CTR_AST_NODE_EXPRMESSAGE) 	str = "MESSAG\0";
-		else if (t->type == CTR_AST_NODE_UNAMESSAGE) 	str = "UMSSAG\0";
-		else if (t->type == CTR_AST_NODE_KWMESSAGE) 		str = "KMSSAG\0";
-		else if (t->type == CTR_AST_NODE_BINMESSAGE) 	str = "BMSSAG\0";
-		else if (t->type == CTR_AST_NODE_LTRSTRING) 		str = "STRING\0";
-		else if (t->type == CTR_AST_NODE_REFERENCE) 		str = "REFRNC\0";
-		else if (t->type == CTR_AST_NODE_LTRNUM) 		str = "NUMBER\0";
-		else if (t->type == CTR_AST_NODE_CODEBLOCK) 		str = "CODEBL\0";
-		else if (t->type == CTR_AST_NODE_RETURNFROMBLOCK)str = "RETURN\0";
-		else if (t->type == CTR_AST_NODE_PARAMLIST)		str = "PARAMS\0";
-		else if (t->type == CTR_AST_NODE_INSTRLIST)		str = "INSTRS\0";
-		else if (t->type == CTR_AST_NODE_ENDOFPROGRAM)	str = "EOPROG\0";
-		else if (t->type == CTR_AST_NODE_NESTED)	        str = "NESTED\0";
-		else if (t->type == CTR_AST_NODE_LTRBOOLFALSE)	str = "BFALSE\0";
-		else if (t->type == CTR_AST_NODE_LTRBOOLTRUE)	str = "BLTRUE\0";
-		else if (t->type == CTR_AST_NODE_LTRNIL)	        str = "LTRNIL\0";
-		else 								str = "UNKNW?\0";
+		switch (t->type) {
+			case CTR_AST_NODE_EXPRASSIGNMENT:  str = "ASSIGN\0"; break;
+			case CTR_AST_NODE_EXPRMESSAGE:     str = "MESSAG\0"; break;
+			case CTR_AST_NODE_UNAMESSAGE:      str = "UMSSAG\0"; break;
+			case CTR_AST_NODE_KWMESSAGE:       str = "KMSSAG\0"; break;
+			case CTR_AST_NODE_BINMESSAGE:      str = "BMSSAG\0"; break;
+			case CTR_AST_NODE_LTRSTRING:       str = "STRING\0"; break;
+			case CTR_AST_NODE_REFERENCE:       str = "REFRNC\0"; break;
+			case CTR_AST_NODE_LTRNUM:          str = "NUMBER\0"; break;
+			case CTR_AST_NODE_CODEBLOCK:       str = "CODEBL\0"; break;
+			case CTR_AST_NODE_RETURNFROMBLOCK: str = "RETURN\0"; break;
+			case CTR_AST_NODE_PARAMLIST:       str = "PARAMS\0"; break;
+			case CTR_AST_NODE_INSTRLIST:       str = "INSTRS\0"; break;
+			case CTR_AST_NODE_ENDOFPROGRAM:    str = "EOPROG\0"; break;
+			case CTR_AST_NODE_NESTED:          str = "NESTED\0"; break;
+			case CTR_AST_NODE_LTRBOOLFALSE:    str = "BFALSE\0"; break;
+			case CTR_AST_NODE_LTRBOOLTRUE:     str = "BLTRUE\0"; break;
+			case CTR_AST_NODE_LTRNIL:          str = "LTRNIL\0"; break;
+			default:                           str = "UNKNW?\0"; break;
+		}
 		vbuf = calloc(sizeof(char),t->vlen+1);
 		strncpy(vbuf, t->value, t->vlen);
 		printf("%s %s (%p)\n", str, vbuf, (void*) t);
@@ -192,16 +194,16 @@ void ctr_internal_debug_tree(ctr_tnode* ti, int indent) {
 void* ctr_internal_plugin_find(ctr_object* key) {
 	ctr_object* modNameObject = ctr_internal_cast2string(key);
 	void* handle;
-	char  pathName[1024];
 	char  pathNameMod[1024];
 	char* modName;
 	char* modNameLow;
+	char* realPathModName = NULL;
 	CTR_2CSTR(modName, modNameObject);
 	modNameLow = modName;
 	for ( ; *modNameLow; ++modNameLow) *modNameLow = tolower(*modNameLow);
-	if (getcwd(pathName, sizeof(pathName)) == NULL) return NULL;
-	snprintf(pathNameMod, 1024,"%s/mods/%s/libctr%s.so", pathName, modName, modName);
-	if (access(pathNameMod, F_OK) == -1) return NULL;
-	handle =  dlopen(pathNameMod, RTLD_NOW);
+	snprintf(pathNameMod, 1024,"mods/%s/libctr%s.so", modName, modName);
+	realPathModName = realpath(pathNameMod, NULL);
+	if (access(realPathModName, F_OK) == -1) return NULL;
+	handle =  dlopen(realPathModName, RTLD_NOW);
 	return handle;
 }

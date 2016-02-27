@@ -5,7 +5,7 @@
 # generates man-style documentation
 # written by Gabor de Mooij
 
-# Start: ctr sman.ctr > ctr.1 ;mandoc -O style=ctrstyle.css -Thtml ctr.1 > misc/docs.html ;mandoc -a ctr.1
+# Start: ctr sman.ctr > ctr.1 ;mandoc -O style=ctrstyle.css -Thtml ctr.1 > docs.html ;mandoc -a ctr.1
 
 
 ?>
@@ -50,10 +50,11 @@ The following messages are part of the Core API of the Citrine Programming Langu
 <?.
 
 files := Array <- 
-			'base.c' ;
-			'collections.c' ;
-			'file.c' ;
-			'system.c'.
+			'../base.c' ;
+			'../collections.c' ;
+			'../file.c' ;
+			'../system.c' ;
+			'../plugins/request/request.c'.
 
 files each: { index file |
 
@@ -62,7 +63,7 @@ files each: { index file |
 	var commentBlocks := str split: '/**'.
 	commentBlocks shift.
 	
-	(commentBlocks count) * {\
+	(commentBlocks count) times: {\
 		var comment := commentBlocks shift.
 		var lines   := comment split: '\n'.
 		lines count > 3 ifTrue: {\
@@ -88,7 +89,7 @@ files each: { index file |
 				whileTrue: {\
 						line := line replace: '\\' with: '\\\\'.
 						Pen write: '    '+(line skip: 2), brk.
-						n inc: 1.
+						n add: 1.
 				}.
 				Pen write: '.fi', brk.
 			}.
